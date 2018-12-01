@@ -1,6 +1,7 @@
 #include <getopt.h>
 #include <string.h>
 #include <iostream>
+#include <fstream>
 #include <locale>
 
 using namespace std;
@@ -27,7 +28,7 @@ int main(int argc, char **argv)
     bool use_pattern_path = false;
     bool pattern_defined = false;
 
-    char* text_path;
+    char *text_path;
 
     int c;
     int option_index = 0;
@@ -87,7 +88,8 @@ int main(int argc, char **argv)
     }
     else if (strcmp(mode, "search") == 0)
     {
-        if (!pattern_defined) {
+        if (!pattern_defined)
+        {
             if (optind == argc)
             {
                 cout << "pattern not specified\n";
@@ -108,7 +110,52 @@ int main(int argc, char **argv)
     else
     {
         print_help();
+        return 5;
     }
+
+    ifstream text_file(text_path, ios::ate);
+    if (!text_file.is_open())
+    {
+        cout << "could not open text file " << text_path << "\n";
+        return 6;
+    }
+
+    long textlen = text_file.tellg();
+    --textlen;
+    text_file.seekg(0);
+    char *text = new char[textlen];
+    text_file.read(text, textlen);
+    text_file.close();
+
+    if (strcmp(mode, "search") == 0)
+    {
+        if (!use_pattern_path)
+        {
+        }
+        else
+        {
+            int STRING_SIZE_LESS = 1024; //TODO
+            char pat[STRING_SIZE_LESS];
+            ifstream pattern_file;
+            pattern_file.open(pattern_path);
+            if (!pattern_file.is_open())
+            {
+                cout << "could not open pattern file " << pattern_path << "\n";
+                return 7;
+            }
+            while (!pattern_file.eof())
+            {
+                pattern_file.getline(pat, STRING_SIZE_LESS);
+                pattern_file.gcount();
+            }
+            pattern_file.close();
+        }
+    }
+    else
+    {
+    }
+
+    text_file.close();
 
     return 0;
 }
