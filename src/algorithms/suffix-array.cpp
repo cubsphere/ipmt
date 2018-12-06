@@ -158,7 +158,7 @@ long succ(char *text, long textlen, char *pat, long patlen, long *sa, long *L, l
         while (r - l > 1)
         {
             long h = (l + r) / 2;
-            if (left > right)
+            if (left >= right)
             {
                 if (L[h] > left)
                     l = h;
@@ -170,7 +170,7 @@ long succ(char *text, long textlen, char *pat, long patlen, long *sa, long *L, l
                 else
                 {
                     long half = left + lcp_bf(text + sa[h] + left, textlen - (sa[h] + left), pat + left, patlen - left);
-                    if ((half < patlen) & (half < textlen - sa[h]) & (pat[half]) < text[sa[h] + half])
+                    if ((half < patlen) & (half < textlen - sa[h]) & (text[sa[h] + half] < pat[half]))
                     {
                         l = h;
                         left = half;
@@ -194,7 +194,7 @@ long succ(char *text, long textlen, char *pat, long patlen, long *sa, long *L, l
                 else
                 {
                     long half = right + lcp_bf(text + sa[h] + right, textlen - (sa[h] + right), pat + right, patlen - right);
-                    if ((half < patlen) & (half < textlen - sa[h]) & (pat[half]) < text[sa[h] + half])
+                    if ((half < patlen) & (half < textlen - sa[h]) & (text[sa[h] + half] < pat[half]))
                     {
                         l = h;
                         left = half;
@@ -226,7 +226,7 @@ long pred(char *text, long textlen, char *pat, long patlen, long *sa, long *L, l
         while (r - l > 1)
         {
             long h = (l + r) / 2;
-            if (left > right)
+            if (left >= right)
             {
                 if (L[h] > left)
                     l = h;
@@ -238,7 +238,7 @@ long pred(char *text, long textlen, char *pat, long patlen, long *sa, long *L, l
                 else
                 {
                     long half = left + lcp_bf(text + sa[h] + left, textlen - (sa[h] + left), pat + left, patlen - left);
-                    if ((half < patlen) & (half < textlen - sa[h]) & (text[sa[h] + half] < pat[half]))
+                    if ((half < patlen) & (half < textlen - sa[h]) & (text[sa[h] + half] > pat[half]))
                     {
                         r = h;
                         right = half;
@@ -262,7 +262,7 @@ long pred(char *text, long textlen, char *pat, long patlen, long *sa, long *L, l
                 else
                 {
                     long half = right + lcp_bf(text + sa[h] + right, textlen - (sa[h] + right), pat + right, patlen - right);
-                    if ((half < patlen) & (half < textlen - sa[h]) & (text[sa[h] + half] < pat[half]))
+                    if ((half < patlen) & (half < textlen - sa[h]) & (text[sa[h] + half] > pat[half]))
                     {
                         r = h;
                         right = half;
