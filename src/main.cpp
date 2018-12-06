@@ -3,11 +3,15 @@
 #include <iostream>
 #include <fstream>
 #include <locale>
+#include <suffix-array.hpp>
 
 using namespace std;
 
 bool help_printed = false;
 const char *helpful_string = "after reading this helpful string, you learn how to use this program properly.\n";
+const long STRING_SIZE_LESS = 4096;
+
+void print_occs(vector<long> *occ, char *txt, long n);
 
 void print_help()
 {
@@ -120,21 +124,28 @@ int main(int argc, char **argv)
         return 6;
     }
 
-    long textlen = text_file.tellg();
-    --textlen;
-    text_file.seekg(0);
-    char *text = new char[textlen];
-    text_file.read(text, textlen);
-    text_file.close();
-
     if (strcmp(mode, "search") == 0)
     {
+
+        //TODO decompress
+
+        long fullsize = (long)(text_file.tellg()) - 1;
+        long textlen = fullsize / (3 * sizeof(long) / sizeof(char) + 1);
+        text_file.seekg(0);
+
+        char *text = new char[fullsize];
+        text_file.read(text, fullsize);
+
+        long *sa_info = (long *)(text + textlen);
+
+        vector<long> occ;
         if (!use_pattern_path)
         {
+            search(text, textlen, pattern, strlen(pattern), sa_info, sa_info + textlen, sa_info + textlen * 2, &occ);
+            print_occs(&occ, text, textlen);
         }
         else
-        {
-            int STRING_SIZE_LESS = 1024; //TODO
+        { //TODO
             char pat[STRING_SIZE_LESS];
             ifstream pattern_file;
             pattern_file.open(pattern_path);
@@ -146,16 +157,56 @@ int main(int argc, char **argv)
             while (!pattern_file.eof())
             {
                 pattern_file.getline(pat, STRING_SIZE_LESS);
-                pattern_file.gcount();
+                search(text, textlen, pat, pattern_file.gcount() - 1, sa_info, sa_info + textlen, sa_info + textlen * 2, &occ);
+                printf(">> occurences for %s:\n", pat);
+                print_occs(&occ, text, textlen);
+                printf("\n");
+                occ.erase(occ.begin(), occ.end());
             }
             pattern_file.close();
         }
     }
     else
     {
+        long textlen = (long)(text_file.tellg()) - 1;
+        text_file.seekg(0);
+        long fullsize = textlen + (textlen * 3) * sizeof(long) / sizeof(char);
+        char *text = new char[fullsize];
+        text_file.read(text, textlen);
+        text_file.close();
+
+        long *sa_info = (long *)(text + textlen);
+        construct(text, textlen, sa_info, sa_info + textlen, sa_info + textlen * 2);
+
+        //TODO compress
+
+        char *text_dest = new char[strlen(text_path) + 4];
+        strcpy(text_dest, text_path);
+        strcat(text_dest, ".idx");
+        ofstream text_file_dest(text_dest);
+        text_file_dest.write(text, fullsize);
+        text_file_dest.close();
     }
 
-    text_file.close();
-
     return 0;
+}
+
+void print_occs(vector<long> *occ, char *txt, long n)
+{
+    long pos = 0;
+    string s = string(txt);
+    while (pos < occ->size())
+    {
+        long hind = s.find_last_of('\n', occ->at(pos)) + 1;
+        long fore = s.find('\n', occ->at(pos));
+
+        if (hind == -1)
+            hind = 0;
+        if (fore == -1)
+            fore = n;
+
+        printf("%.*s\n", fore - hind, txt + hind);
+        while (pos < occ->size() && occ->at(pos) < fore)
+            ++pos;
+    }
 }
