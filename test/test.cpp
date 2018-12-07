@@ -64,7 +64,7 @@ int main()
     for (int k = 0; k < fileslen; ++k)
     {
         compressed_sizes[k] = filesize(files[k]);
-        system(("ipmt index " + files[k]).c_str());
+        system(("ipmt index --no-compression" + files[k]).c_str());
         uncompressed_sizes[k] = filesize(files[k]);
     }
 
