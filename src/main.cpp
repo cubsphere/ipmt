@@ -25,6 +25,7 @@ void print_help()
 int main(int argc, char **argv)
 {
     bool count_mode = false;
+    bool no_compression = false;
 
     char *mode;
     char *pattern_path;
@@ -39,13 +40,14 @@ int main(int argc, char **argv)
     static struct option long_options[] = {
         {"pattern", required_argument, 0, 'p'},
         {"count", no_argument, 0, 'c'},
+        {"no-compression", no_argument, 0, 'n'},
         {"help", no_argument, 0, 'h'}};
 
     bool stop = false;
 
     while (1)
     {
-        c = getopt_long(argc, argv, "p:ch", long_options, &option_index);
+        c = getopt_long(argc, argv, "p:cnh", long_options, &option_index);
 
         if (c == -1 || stop)
             break;
@@ -63,6 +65,10 @@ int main(int argc, char **argv)
 
         case 'h':
             print_help();
+            break;
+
+        case 'n':
+            no_compression = true;
             break;
 
         case '?':
@@ -124,19 +130,27 @@ int main(int argc, char **argv)
         return 6;
     }
 
+    char *text;
+    long *sa_info;
+    long textlen;
+    long fullsize;
     if (strcmp(mode, "search") == 0)
     {
+        if (no_compression | !no_compression)
+        {
+            fullsize = (long)(text_file.tellg()) - 1;
+            textlen = fullsize / (3 * sizeof(long) / sizeof(char) + 1);
+            text_file.seekg(0);
 
-        //TODO decompress
+            text = new char[fullsize];
+            sa_info = (long *)(text + textlen);
+            text_file.read(text, fullsize);
+            text_file.close();
 
-        long fullsize = (long)(text_file.tellg()) - 1;
-        long textlen = fullsize / (3 * sizeof(long) / sizeof(char) + 1);
-        text_file.seekg(0);
-
-        char *text = new char[fullsize];
-        text_file.read(text, fullsize);
-
-        long *sa_info = (long *)(text + textlen);
+        }
+        else
+        {
+        }
 
         vector<long> occ;
         if (!use_pattern_path)
@@ -145,7 +159,7 @@ int main(int argc, char **argv)
             print_occs(&occ, text, textlen);
         }
         else
-        { //TODO
+        {
             char pat[STRING_SIZE_LESS];
             ifstream pattern_file;
             pattern_file.open(pattern_path);
@@ -168,25 +182,32 @@ int main(int argc, char **argv)
     }
     else
     {
-        long textlen = (long)(text_file.tellg()) - 1;
-        text_file.seekg(0);
-        long fullsize = textlen + (textlen * 3) * sizeof(long) / sizeof(char);
-        char *text = new char[fullsize];
-        text_file.read(text, textlen);
-        text_file.close();
+        if (no_compression | !no_compression)
+        {
+            textlen = (long)(text_file.tellg()) - 1;
+            fullsize = textlen + (textlen * 3) * sizeof(long) / sizeof(char);
+            text_file.seekg(0);
 
-        long *sa_info = (long *)(text + textlen);
+            text = new char[fullsize];
+            sa_info = (long *)(text + textlen);
+            text_file.read(text, textlen);
+            text_file.close();
+        }
+        else
+        {
+        }
+
         construct(text, textlen, sa_info, sa_info + textlen, sa_info + textlen * 2);
-
-        //TODO compress
 
         char *text_dest = new char[strlen(text_path) + 4];
         strcpy(text_dest, text_path);
         strcat(text_dest, ".idx");
-        ofstream text_file_dest(text_dest);
+        ofstream text_file_dest(text_dest, ios_base::trunc);
         text_file_dest.write(text, fullsize);
         text_file_dest.close();
+        delete[] text_dest;
     }
+    delete[] text;
 
     return 0;
 }
