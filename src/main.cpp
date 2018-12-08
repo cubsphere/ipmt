@@ -4,6 +4,7 @@
 #include <fstream>
 #include <locale>
 #include <suffix-array.hpp>
+#include <string_view>
 
 using namespace std;
 
@@ -11,7 +12,7 @@ bool help_printed = false;
 const char *helpful_string = "after reading this helpful string, you learn how to use this program properly.\n";
 const int STRING_SIZE_LESS = 4096;
 
-void print_occs(vector<int> *occ, char *txt, int n);
+void print_occs(vector<int> *occ, char *txt, int n, bool count_mode);
 
 void print_help()
 {
@@ -129,8 +130,8 @@ int main(int argc, char **argv)
     int fullsize;
     if (strcmp(mode, "search") == 0)
     {
-        ifstream text_file(text_path, ios::ate | ios::binary);
-        if (!text_file.is_open())
+        ifstream text_file(text_path, ios::binary);
+        if (!text_file.good())
         {
             cout << "could not open text file " << text_path << "\n";
             return 6;
@@ -138,10 +139,9 @@ int main(int argc, char **argv)
 
         if (no_compression | !no_compression)
         {
-            text_file.seekg(0);
-            text_file.read((char *)(&textlen), sizeof(int)/sizeof(char));
+            text_file.read((char *)(&textlen), sizeof(int) / sizeof(char));
             fullsize = textlen + (textlen * 3) * sizeof(int) / sizeof(char);
-            text_file.seekg(sizeof(int)/sizeof(char));
+            text_file.seekg(sizeof(int) / sizeof(char));
 
             text = new char[fullsize];
             sa_info = (int *)(text + textlen);
@@ -156,7 +156,7 @@ int main(int argc, char **argv)
         if (!use_pattern_path)
         {
             search(text, textlen, pattern, strlen(pattern), sa_info, sa_info + textlen, sa_info + textlen * 2, &occ);
-            print_occs(&occ, text, textlen);
+            print_occs(&occ, text, textlen, count_mode);
         }
         else
         {
@@ -173,7 +173,7 @@ int main(int argc, char **argv)
                 pattern_file.getline(pat, STRING_SIZE_LESS);
                 search(text, textlen, pat, pattern_file.gcount() - 1, sa_info, sa_info + textlen, sa_info + textlen * 2, &occ);
                 printf(">> occurences for %s:\n", pat);
-                print_occs(&occ, text, textlen);
+                print_occs(&occ, text, textlen, count_mode);
                 printf("\n");
                 occ.erase(occ.begin(), occ.end());
             }
@@ -183,7 +183,7 @@ int main(int argc, char **argv)
     else
     {
         ifstream text_file(text_path, ios::ate | ios::binary);
-        if (!text_file.is_open())
+        if (!text_file.good())
         {
             cout << "could not open text file " << text_path << "\n";
             return 6;
@@ -219,22 +219,25 @@ int main(int argc, char **argv)
     return 0;
 }
 
-void print_occs(vector<int> *occ, char *txt, int n)
+void print_occs(vector<int> *occ, char *txt, int n, bool count_mode)
 {
     int pos = 0;
-    string s = string(txt);
-    while (pos < occ->size())
-    {
-        int hind = s.find_last_of('\n', occ->at(pos)) + 1;
-        int fore = s.find('\n', occ->at(pos));
+    string_view s(txt);
+    if (count_mode)
+        cout << occ->size() << '\n';
+    else
+        while (pos < occ->size())
+        {
+            int hind = s.find_last_of('\n', occ->at(pos)) + 1;
+            int fore = s.find('\n', occ->at(pos));
 
-        if (hind == -1)
-            hind = 0;
-        if (fore == -1)
-            fore = n;
+            if (hind == -1)
+                hind = 0;
+            if (fore == -1)
+                fore = n;
 
-        printf("%.*s\n", fore - hind, txt + hind);
-        while (pos < occ->size() && occ->at(pos) < fore)
-            ++pos;
-    }
+            printf("%.*s\n", fore - hind, txt + hind);
+            while (pos < occ->size() && occ->at(pos) < fore)
+                ++pos;
+        }
 }
