@@ -15,7 +15,7 @@ string randword(int len)
     string s;
     for (int i = 0; i < len; ++i)
     {
-        s[i] = alphanum[rand() / (RAND_MAX / (len) + 1)];
+        s[i] = alphanum[rand() / (RAND_MAX / (62) + 1)];
     }
 }
 
