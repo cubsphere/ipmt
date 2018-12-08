@@ -7,9 +7,9 @@ using namespace std;
 
 struct elmt
 {
-    long char_order;
-    long suffix_order;
-    long pos;
+    uint_least32_t char_order;
+    uint_least32_t suffix_order;
+    uint_least32_t pos;
 };
 
 bool compare(elmt a, elmt b)
@@ -19,18 +19,18 @@ bool compare(elmt a, elmt b)
         || (a.suffix_order == b.suffix_order && a.pos < b.pos));
 }
 
-long access(long *el, long y, long x, long textlen)
+uint_least32_t access(uint_least32_t *el, uint_least32_t y, uint_least32_t x, uint_least32_t textlen)
 {
     return el[y * textlen + x];
 }
 
-void sort_index(char *text, long textlen, long *S, elmt *V)
+void sort_index(char *text, uint_least32_t textlen, uint_least32_t *S, elmt *V)
 {
     sort(V, V + textlen, compare);
 
-    long r = 0;
+    uint_least32_t r = 0;
     S[V[0].pos] = r;
-    for (long i = 1; i < textlen; ++i)
+    for (uint_least32_t i = 1; i < textlen; ++i)
     {
         if (V[i].char_order != V[i - 1].char_order | V[i].suffix_order != V[i - 1].suffix_order)
             ++r;
@@ -39,22 +39,22 @@ void sort_index(char *text, long textlen, long *S, elmt *V)
     }
 }
 
-void build_P(char *text, long textlen, long lenlog2plus1, long *P)
+void build_P(char *text, uint_least32_t textlen, uint_least32_t lenlog2plus1, uint_least32_t *P)
 {
     fill_n(P, textlen, -1);
     elmt *V = new elmt[textlen];
-    for (long i = 0; i < textlen; ++i)
+    for (uint_least32_t i = 0; i < textlen; ++i)
     {
         V[i].char_order = text[i];
         V[i].suffix_order = -1;
         V[i].pos = i;
     }
     sort_index(text, textlen, P, V);
-    long *S = P;
-    for (long k = 1; k < lenlog2plus1; ++k)
+    uint_least32_t *S = P;
+    for (uint_least32_t k = 1; k < lenlog2plus1; ++k)
     {
-        long j = 1 << k - 1;
-        for (long i = 0; i < textlen; ++i)
+        uint_least32_t j = 1 << k - 1;
+        for (uint_least32_t i = 0; i < textlen; ++i)
         {
             V[i].char_order = S[i];
             if (textlen <= i + j)
@@ -62,7 +62,7 @@ void build_P(char *text, long textlen, long lenlog2plus1, long *P)
             else
                 V[i].suffix_order = S[i + j];
         }
-        for (long i = 0; i < textlen; ++i)
+        for (uint_least32_t i = 0; i < textlen; ++i)
         {
             V[i].pos = i;
         }
@@ -72,26 +72,26 @@ void build_P(char *text, long textlen, long lenlog2plus1, long *P)
     delete[] V;
 }
 
-void sa_invert(long *P, long textlen, long *sa)
+void sa_invert(uint_least32_t *P, uint_least32_t textlen, uint_least32_t *sa)
 {
-    for (long i = 0; i < textlen; ++i)
+    for (uint_least32_t i = 0; i < textlen; ++i)
     {
         sa[i] = -1;
     }
-    for (long i = 0; i < textlen; ++i)
+    for (uint_least32_t i = 0; i < textlen; ++i)
     {
         sa[P[i]] = i;
     }
 }
 
-long lcp(long *P, long textlen, long lenlog2, long i, long j)
+uint_least32_t lcp(uint_least32_t *P, uint_least32_t textlen, uint_least32_t lenlog2, uint_least32_t i, uint_least32_t j)
 {
     if (i == j)
         return textlen - i;
     else
     {
-        long l = 0;
-        for (long q = lenlog2; (q >= 0) & (i < textlen) & (j < textlen); --q)
+        uint_least32_t l = 0;
+        for (uint_least32_t q = lenlog2; (q >= 0) & (i < textlen) & (j < textlen); --q)
         {
             if (access(P, q, i, textlen) == access(P, q, j, textlen))
             {
@@ -104,19 +104,19 @@ long lcp(long *P, long textlen, long lenlog2, long i, long j)
     }
 }
 
-void fill_lrlcp(long *sa, long *P, long textlen, long lenlog2, long left, long right, long *L, long *R)
+void fill_lrlcp(uint_least32_t *sa, uint_least32_t *P, uint_least32_t textlen, uint_least32_t lenlog2, uint_least32_t left, uint_least32_t right, uint_least32_t *L, uint_least32_t *R)
 {
     if (right - left <= 1)
         return;
 
-    long half = (left + right) / 2;
+    uint_least32_t half = (left + right) / 2;
     L[half] = lcp(P, textlen, lenlog2, sa[left], sa[half]);
     R[half] = lcp(P, textlen, lenlog2, sa[right], sa[half]);
     fill_lrlcp(sa, P, textlen, lenlog2, left, half, L, R);
     fill_lrlcp(sa, P, textlen, lenlog2, half, right, L, R);
 }
 
-void lrlcp(long *sa, long *P, long textlen, long lenlog2plus1, long *L, long *R)
+void lrlcp(uint_least32_t *sa, uint_least32_t *P, uint_least32_t textlen, uint_least32_t lenlog2plus1, uint_least32_t *L, uint_least32_t *R)
 {
     for (int i = 0; i < textlen; ++i)
     {
@@ -126,24 +126,24 @@ void lrlcp(long *sa, long *P, long textlen, long lenlog2plus1, long *L, long *R)
     fill_lrlcp(sa, P, textlen, lenlog2plus1 - 1, 0, textlen - 1, L, R);
 }
 
-void construct(char* text, long textlen, long* sa, long* L, long* R)
+void construct(char* text, uint_least32_t textlen, uint_least32_t* sa, uint_least32_t* L, uint_least32_t* R)
 {
-    long lenlog2plus1 = ceil(log2(textlen)) + 1;
-    long *P = new long[textlen * lenlog2plus1];
+    uint_least32_t lenlog2plus1 = ceil(log2(textlen)) + 1;
+    uint_least32_t *P = new uint_least32_t[textlen * lenlog2plus1];
     build_P(text, textlen, lenlog2plus1, P);
     sa_invert(P + textlen * (lenlog2plus1 - 1), textlen, sa);
     lrlcp(sa, P, textlen, lenlog2plus1, L, R);
     delete[] P;
 }
 
-long lcp_bf(char *str1, long str1len, char *str2, long str2len)
+uint_least32_t lcp_bf(char *str1, uint_least32_t str1len, char *str2, uint_least32_t str2len)
 {
-    long minnie = min(str1len, str2len);
+    uint_least32_t minnie = min(str1len, str2len);
     pair<char *, char *> pair = mismatch(str1, str1 + minnie, str2);
     return pair.first - str1;
 }
 
-long succ(char *text, long textlen, char *pat, long patlen, long *sa, long *L, long *R)
+uint_least32_t succ(char *text, uint_least32_t textlen, char *pat, uint_least32_t patlen, uint_least32_t *sa, uint_least32_t *L, uint_least32_t *R)
 {
     if (strncmp(text + sa[textlen - 1], pat, patlen) < 0)
         return textlen;
@@ -151,13 +151,13 @@ long succ(char *text, long textlen, char *pat, long patlen, long *sa, long *L, l
         return 0;
     else
     {
-        long left = lcp_bf(text + sa[0], textlen - sa[0], pat, patlen);
-        long right = lcp_bf(text + sa[textlen - 1], textlen - sa[textlen - 1], pat, patlen);
-        long r = textlen - 1;
-        long l = 0;
+        uint_least32_t left = lcp_bf(text + sa[0], textlen - sa[0], pat, patlen);
+        uint_least32_t right = lcp_bf(text + sa[textlen - 1], textlen - sa[textlen - 1], pat, patlen);
+        uint_least32_t r = textlen - 1;
+        uint_least32_t l = 0;
         while (r - l > 1)
         {
-            long h = (l + r) / 2;
+            uint_least32_t h = (l + r) / 2;
             if (left >= right)
             {
                 if (L[h] > left)
@@ -169,7 +169,7 @@ long succ(char *text, long textlen, char *pat, long patlen, long *sa, long *L, l
                 }
                 else
                 {
-                    long half = left + lcp_bf(text + sa[h] + left, textlen - (sa[h] + left), pat + left, patlen - left);
+                    uint_least32_t half = left + lcp_bf(text + sa[h] + left, textlen - (sa[h] + left), pat + left, patlen - left);
                     if ((half < patlen) & (half < textlen - sa[h]) & (text[sa[h] + half] < pat[half]))
                     {
                         l = h;
@@ -193,7 +193,7 @@ long succ(char *text, long textlen, char *pat, long patlen, long *sa, long *L, l
                 }
                 else
                 {
-                    long half = right + lcp_bf(text + sa[h] + right, textlen - (sa[h] + right), pat + right, patlen - right);
+                    uint_least32_t half = right + lcp_bf(text + sa[h] + right, textlen - (sa[h] + right), pat + right, patlen - right);
                     if ((half < patlen) & (half < textlen - sa[h]) & (text[sa[h] + half] < pat[half]))
                     {
                         l = h;
@@ -211,7 +211,7 @@ long succ(char *text, long textlen, char *pat, long patlen, long *sa, long *L, l
     }
 }
 
-long pred(char *text, long textlen, char *pat, long patlen, long *sa, long *L, long *R)
+uint_least32_t pred(char *text, uint_least32_t textlen, char *pat, uint_least32_t patlen, uint_least32_t *sa, uint_least32_t *L, uint_least32_t *R)
 {
     if (strncmp(text + sa[textlen - 1], pat, patlen) <= 0)
         return textlen - 1;
@@ -219,13 +219,13 @@ long pred(char *text, long textlen, char *pat, long patlen, long *sa, long *L, l
         return -1;
     else
     {
-        long left = lcp_bf(text + sa[0], textlen - sa[0], pat, patlen);
-        long right = lcp_bf(text + sa[textlen - 1], textlen - sa[textlen - 1], pat, patlen);
-        long r = textlen - 1;
-        long l = 0;
+        uint_least32_t left = lcp_bf(text + sa[0], textlen - sa[0], pat, patlen);
+        uint_least32_t right = lcp_bf(text + sa[textlen - 1], textlen - sa[textlen - 1], pat, patlen);
+        uint_least32_t r = textlen - 1;
+        uint_least32_t l = 0;
         while (r - l > 1)
         {
-            long h = (l + r) / 2;
+            uint_least32_t h = (l + r) / 2;
             if (left >= right)
             {
                 if (L[h] > left)
@@ -237,7 +237,7 @@ long pred(char *text, long textlen, char *pat, long patlen, long *sa, long *L, l
                 }
                 else
                 {
-                    long half = left + lcp_bf(text + sa[h] + left, textlen - (sa[h] + left), pat + left, patlen - left);
+                    uint_least32_t half = left + lcp_bf(text + sa[h] + left, textlen - (sa[h] + left), pat + left, patlen - left);
                     if ((half < patlen) & (half < textlen - sa[h]) & (text[sa[h] + half] > pat[half]))
                     {
                         r = h;
@@ -261,7 +261,7 @@ long pred(char *text, long textlen, char *pat, long patlen, long *sa, long *L, l
                 }
                 else
                 {
-                    long half = right + lcp_bf(text + sa[h] + right, textlen - (sa[h] + right), pat + right, patlen - right);
+                    uint_least32_t half = right + lcp_bf(text + sa[h] + right, textlen - (sa[h] + right), pat + right, patlen - right);
                     if ((half < patlen) & (half < textlen - sa[h]) & (text[sa[h] + half] > pat[half]))
                     {
                         r = h;
@@ -279,11 +279,11 @@ long pred(char *text, long textlen, char *pat, long patlen, long *sa, long *L, l
     }
 }
 
-void search(char *text, long textlen, char *pat, long patlen, long *sa, long *L, long *R, vector<long> *occ)
+void search(char *text, uint_least32_t textlen, char *pat, uint_least32_t patlen, uint_least32_t *sa, uint_least32_t *L, uint_least32_t *R, vector<uint_least32_t> *occ)
 {
-    long left = succ(text, textlen, pat, patlen, sa, L, R);
-    long right = pred(text, textlen, pat, patlen, sa, L, R);
-    for(long i = left; i <= right; ++i)
+    uint_least32_t left = succ(text, textlen, pat, patlen, sa, L, R);
+    uint_least32_t right = pred(text, textlen, pat, patlen, sa, L, R);
+    for(uint_least32_t i = left; i <= right; ++i)
     {
         occ->push_back(sa[i]);
     }

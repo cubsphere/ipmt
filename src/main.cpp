@@ -9,9 +9,9 @@ using namespace std;
 
 bool help_printed = false;
 const char *helpful_string = "after reading this helpful string, you learn how to use this program properly.\n";
-const long STRING_SIZE_LESS = 4096;
+const int STRING_SIZE_LESS = 4096;
 
-void print_occs(vector<long> *occ, char *txt, long n);
+void print_occs(vector<int> *occ, char *txt, int n);
 
 void print_help()
 {
@@ -131,19 +131,19 @@ int main(int argc, char **argv)
     }
 
     char *text;
-    long *sa_info;
-    long textlen;
-    long fullsize;
+    int *sa_info;
+    int textlen;
+    int fullsize;
     if (strcmp(mode, "search") == 0)
     {
         if (no_compression | !no_compression)
         {
-            fullsize = (long)(text_file.tellg()) - 1;
-            textlen = fullsize / (3 * sizeof(long) / sizeof(char) + 1);
+            fullsize = (int)(text_file.tellg()) - 1;
+            textlen = fullsize / (3 * sizeof(int) / sizeof(char) + 1);
             text_file.seekg(0);
 
             text = new char[fullsize];
-            sa_info = (long *)(text + textlen);
+            sa_info = (int *)(text + textlen);
             text_file.read(text, fullsize);
             text_file.close();
 
@@ -152,7 +152,7 @@ int main(int argc, char **argv)
         {
         }
 
-        vector<long> occ;
+        vector<int> occ;
         if (!use_pattern_path)
         {
             search(text, textlen, pattern, strlen(pattern), sa_info, sa_info + textlen, sa_info + textlen * 2, &occ);
@@ -184,12 +184,12 @@ int main(int argc, char **argv)
     {
         if (no_compression | !no_compression)
         {
-            textlen = (long)(text_file.tellg()) - 1;
-            fullsize = textlen + (textlen * 3) * sizeof(long) / sizeof(char);
+            textlen = (int)(text_file.tellg()) - 1;
+            fullsize = textlen + (textlen * 3) * sizeof(int) / sizeof(char);
             text_file.seekg(0);
 
             text = new char[fullsize];
-            sa_info = (long *)(text + textlen);
+            sa_info = (int *)(text + textlen);
             text_file.read(text, textlen);
             text_file.close();
         }
@@ -212,14 +212,14 @@ int main(int argc, char **argv)
     return 0;
 }
 
-void print_occs(vector<long> *occ, char *txt, long n)
+void print_occs(vector<int> *occ, char *txt, int n)
 {
-    long pos = 0;
+    int pos = 0;
     string s = string(txt);
     while (pos < occ->size())
     {
-        long hind = s.find_last_of('\n', occ->at(pos)) + 1;
-        long fore = s.find('\n', occ->at(pos));
+        int hind = s.find_last_of('\n', occ->at(pos)) + 1;
+        int fore = s.find('\n', occ->at(pos));
 
         if (hind == -1)
             hind = 0;
