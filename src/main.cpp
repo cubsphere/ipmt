@@ -123,30 +123,30 @@ int main(int argc, char **argv)
         return 5;
     }
 
-    ifstream text_file(text_path, ios::ate);
-    if (!text_file.is_open())
-    {
-        cout << "could not open text file " << text_path << "\n";
-        return 6;
-    }
-
     char *text;
     int *sa_info;
     int textlen;
     int fullsize;
     if (strcmp(mode, "search") == 0)
     {
+        ifstream text_file(text_path, ios::ate | ios::binary);
+        if (!text_file.is_open())
+        {
+            cout << "could not open text file " << text_path << "\n";
+            return 6;
+        }
+
         if (no_compression | !no_compression)
         {
-            fullsize = (int)(text_file.tellg()) - 1;
-            textlen = fullsize / (3 * sizeof(int) / sizeof(char) + 1);
             text_file.seekg(0);
+            text_file.read((char *)(&textlen), sizeof(int)/sizeof(char));
+            fullsize = textlen + (textlen * 3) * sizeof(int) / sizeof(char);
+            text_file.seekg(sizeof(int)/sizeof(char));
 
             text = new char[fullsize];
             sa_info = (int *)(text + textlen);
             text_file.read(text, fullsize);
             text_file.close();
-
         }
         else
         {
@@ -182,9 +182,16 @@ int main(int argc, char **argv)
     }
     else
     {
+        ifstream text_file(text_path, ios::ate | ios::binary);
+        if (!text_file.is_open())
+        {
+            cout << "could not open text file " << text_path << "\n";
+            return 6;
+        }
+
         if (no_compression | !no_compression)
         {
-            textlen = (int)(text_file.tellg()) - 1;
+            textlen = (int)(text_file.tellg());
             fullsize = textlen + (textlen * 3) * sizeof(int) / sizeof(char);
             text_file.seekg(0);
 
@@ -202,10 +209,10 @@ int main(int argc, char **argv)
         char *text_dest = new char[strlen(text_path) + 4];
         strcpy(text_dest, text_path);
         strcat(text_dest, ".idx");
-        ofstream text_file_dest(text_dest, ios_base::trunc);
+        ofstream text_file_dest(text_dest, ios_base::trunc | ios_base::binary);
+        text_file_dest.write((char *)(&textlen), sizeof(int) / sizeof(char));
         text_file_dest.write(text, fullsize);
         text_file_dest.close();
-        delete[] text_dest;
     }
     delete[] text;
 
