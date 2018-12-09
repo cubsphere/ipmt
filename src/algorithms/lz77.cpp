@@ -10,7 +10,7 @@
 
 using namespace std;
 
-void print_fsm(map<pair<int,char>,int> fsm, char* ab, int ablen, int m) {
+void print_fsm(map<pair<int,char>,int> fsm, const char* ab, int ablen, int m) {
   for (int i = 0; i < ablen; i++) {
     cout.write(&ab[i], 1);
     cout << " : ";
@@ -40,7 +40,7 @@ void prefix_match_bf(int *p, int *l, char* txt, int n, char* pat, int m) {
 }
 
 // m = len(pat), l = len(ab)
-map<pair<int,char>,int> build_fsm(char* pat, int m, char* ab, int l) {
+map<pair<int,char>,int> build_fsm(char* pat, int m, const char* ab, int l) {
   // chave eh uma tupla, valor eh int
   map<pair<int, char>, int> delta;
   for (int j = 0; j < l; j++) {
@@ -62,7 +62,7 @@ map<pair<int,char>,int> build_fsm(char* pat, int m, char* ab, int l) {
 }
 
 // n = len(window), m = len(pat), l = len(ab)
-void prefix_match(int* pos, int* maxlen, char* window, int n, char* pat,int m, char* ab, int l) {
+void prefix_match(int* pos, int* maxlen, char* window, int n, char* pat,int m, const char* ab, int l) {
   map<pair<int,char>,int> fsm = build_fsm(pat, m, ab, l);
   *maxlen = 0;
   int cur = 0;
@@ -79,7 +79,7 @@ void prefix_match(int* pos, int* maxlen, char* window, int n, char* pat,int m, c
 }
 
 // base = len(ab)
-char* int_encode(int x, int size, char* ab, int base, int* cs) {
+char* int_encode(int x, int size, const char* ab, int base, int* cs) {
   int codesize = (int) ceil(log(size)/log(base));
   *cs = codesize;
   char* code = new char[codesize];
@@ -96,7 +96,7 @@ char* int_encode(int x, int size, char* ab, int base, int* cs) {
 }
 
 // base = len(ab), xl = len(x)
-int int_decode(char* x, int xl, char* ab, int base) {
+int int_decode(const char* x, int xl, const char* ab, int base) {
   int power = 1, val = 0;
   for (int c = xl-1; c >=0; c--) {
     val = val + idx(ab, base, x[c]) * power;
@@ -105,7 +105,7 @@ int int_decode(char* x, int xl, char* ab, int base) {
   return val;
 }
 
-vector<char>* lz77_encode(const char* txt, int tl, int ls, int ll, char* ab, int ablen) {
+vector<char>* lz77_encode(const char* txt, int tl, int ls, int ll, const char* ab, int ablen) {
   int n = tl+ls;
   char* W = new char[n];
   int i = 0;
@@ -137,7 +137,7 @@ vector<char>* lz77_encode(const char* txt, int tl, int ls, int ll, char* ab, int
   return code;
 }
 
-vector<char>* lz77_decode(vector<char>* code, int ls, int ll, char* ab, int ablen) {
+vector<char>* lz77_decode(vector<char>* code, int ls, int ll, const char* ab, int ablen) {
   vector<char> txt;
   for (int i = 0; i < ls; i++) {
     txt.push_back(ab[0]);
@@ -167,7 +167,7 @@ vector<char>* lz77_decode(vector<char>* code, int ls, int ll, char* ab, int able
   return ret;
 }
 
-int idx(char* s, int l, char f) {
+int idx(const char* s, int l, char f) {
   for (int i = 0; i < l; i++) {
     if (s[i] == f) return i;
   }
@@ -178,19 +178,16 @@ int main() {
   ifstream ftxt("/home/pedro/around.txt");
   string content((istreambuf_iterator<char>(ftxt)),
 		 (istreambuf_iterator<char>()));
-  char ascab[128];
-  for (int i = 0; i < 128; i++) {
-    ascab[i] = (char) i;
-  }
+  const char* ascab = "wadehnortuA\n\r,";
   int ls = 512, ll = 128;
-  vector<char>* code = lz77_encode(&content[0], content.length(),ls,ll,ascab, 128);
+  vector<char>* code = lz77_encode(&content[0], content.length(),ls,ll,ascab, 17);
   ofstream fzip;
   fzip.open("/home/pedro/Desktop/blabla");
   fzip.write(&(*code)[0], code->size());
   fzip.close();
   ftxt.close();
   int otxtlen;
-  vector<char>* otxt = lz77_decode(code, ls, ll, ascab, 128);
+  vector<char>* otxt = lz77_decode(code, ls, ll, ascab, 17);
   ofstream funzip;
   for (int i = 0; i < otxt->size(); i++) {
     cout << (*otxt)[i];
