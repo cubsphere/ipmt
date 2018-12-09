@@ -124,13 +124,16 @@ vector<char> lz77_encode(const char* txt, int tl, int ls, int ll, char* ab, int 
     for (int i = 0; i < cs; i++) {
       code.push_back(code_part[i]);
     }
+    delete [] code_part;
     code_part = int_encode(l, ll, ab, ablen, &cs);
     for (int i = 0; i < cs; i++) {
       code.push_back(code_part[i]);
     }
+    delete [] code_part;
     code.push_back(W[j+l]);
     j += l+1;
   }
+  delete[] W;
   return code;
 }
 
@@ -169,7 +172,7 @@ int idx(char* s, int l, char f) {
   }
   return -1;
 }
-/*
+
 int main() {
   ifstream ftxt("/home/pedro/around.txt");
   string content((istreambuf_iterator<char>(ftxt)),
@@ -196,4 +199,3 @@ int main() {
   //  funzip.write(&otxt[0], otxt.size());
   return 0;
 }
-*/
