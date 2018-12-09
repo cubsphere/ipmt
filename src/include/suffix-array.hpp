@@ -5,7 +5,7 @@
 
 using namespace std;
 
-void construct(char* text, int textlen, int* sa, int* L, int* R);
-void search(char *text, int textlen, char *pat, int patlen, int *sa, int *L, int *R, vector<int> *occ);
+void construct(char* text, int textlen, int* sa);
+void search(char *text, int textlen, char *pat, int patlen, int *sa, vector<int> *occ);
 
 #endif

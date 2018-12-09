@@ -3,8 +3,9 @@
 #include <iostream>
 #include <fstream>
 #include <locale>
-#include <string_view>
+#include <string-view>
 #include <suffix-array.hpp>
+#include <suffix-array-lcp.hpp>
 #include <lz77.hpp>
 
 using namespace std;
@@ -12,10 +13,16 @@ using namespace std;
 bool help_printed = false;
 static const int STRING_SIZE_LESS = 4096;
 
-static const char *helpful_string = "ipmt index [options] textfile\noptions:\n-n, --no-compression: if set, do not compress output file\n--ll: set ll value for compression algorithm\n--ls: set ls value for compression algorithm\n-h, --help: display this message\n\nipmt search [options] pattern textfile\noptions:\n-p, --pattern patternfile: search for all patterns in patternfile. patterns must be separated by a line break. if this option is used, then the program's arguments are instead read as:\nipmt search [options] textfile\n-n, --no-compression: if set, do not decompress input file (i.e. assume it is not compressed)\n--ll: set ll value for decompression algorithm\n--ls: set ls value for decompression algorithm\n-c, --count: if set, display only the amount of occurences of each pattern in the text\n-h, --help: display this message\n";
+static const char *helpful_string = "ipmt index [options] textfile\noptions:\n-n, --no-compression: if set, do not compress output file\n-h, --help: display this message\n\nipmt search [options] pattern textfile\noptions:\n-p, --pattern patternfile: search for all patterns in patternfile. patterns must be separated by a line break. if this option is used, then the program's arguments are instead read as:\nipmt search [options] textfile\n-c, --count: if set, display only the amount of occurences of each pattern in the text\n-h, --help: display this message";
 
 static const char alphabet[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnoprqstuvwxyz1234567890 .,;:<>)([]{}~^/?\\!@#$\%\'\"&*_+-=|\r\n\t";
 static const int ablen = sizeof(alphabet);
+
+static const int ll = 4;
+static const int ls = 6;
+
+static const char flag_uses_lcp = 1;
+static const char flag_uncompressed = 2;
 
 void print_occs(vector<int> *occ, char *txt, int n, bool count_mode);
 
@@ -31,6 +38,7 @@ void print_help()
 int main(int argc, char **argv)
 {
     bool count_mode = false;
+    bool use_lcp = false;
     bool no_compression = false;
 
     char *mode;
@@ -40,15 +48,12 @@ int main(int argc, char **argv)
     bool pattern_defined = false;
 
     char *text_path;
-    int ll = 4;
-    int ls = 5;
 
     int c;
     int option_index = 0;
     static struct option long_options[] = {
         {"pattern", required_argument, 0, 'p'},
-        {"ll", required_argument, 0, 'l'},
-        {"ls", required_argument, 0, 's'},
+        {"lcp", no_argument, 0, 'l'},
         {"count", no_argument, 0, 'c'},
         {"no-compression", no_argument, 0, 'n'},
         {"help", no_argument, 0, 'h'}};
@@ -57,7 +62,7 @@ int main(int argc, char **argv)
 
     while (1)
     {
-        c = getopt_long(argc, argv, "p:cnh", long_options, &option_index);
+        c = getopt_long(argc, argv, "p:clnh", long_options, &option_index);
 
         if (c == -1 || stop)
             break;
@@ -71,11 +76,11 @@ int main(int argc, char **argv)
             break;
 
         case 'l':
-            ll = atoi(optarg);
+            use_lcp = true;
             break;
 
-        case 's':
-            ls = atoi(optarg);
+        case 'c':
+            count_mode = true;
             break;
 
         case 'h':
@@ -94,12 +99,6 @@ int main(int argc, char **argv)
 
     mode = argv[optind];
     ++optind;
-    if(optind >= argc)
-    {
-        print_help();
-        return -1;
-    }
-
     if (strcmp(mode, "index") == 0)
     {
         if (count_mode && pattern_defined)
@@ -157,34 +156,43 @@ int main(int argc, char **argv)
             return 6;
         }
 
+        int filelen = text_file.tellg();
+        text_file.seekg(0);
+        char flags;
+        text_file.read(&flags, 1);
+        no_compression = flags & flag_uncompressed;
+        use_lcp = flags & flag_uses_lcp;
+
         if (no_compression)
         {
-            fullsize = text_file.tellg();
-            textlen = fullsize / (1 + 3 * sizeof(int) / sizeof(char));
-            text_file.seekg(0);
+            fullsize = filelen - 1;
             text = new char[fullsize];
             text_file.read(text, fullsize);
             text_file.close();
         }
         else
         {
-            int filelen = text_file.tellg();
-            text_file.seekg(0);
             vector<char> input;
-            input.resize(filelen);
-            text_file.read(&input[0], filelen);
+            input.resize(filelen - 1);
+            text_file.read(&input[0], filelen - 1);
             vector<char> *vec = lz77_decode(&input, ll, ls, alphabet, ablen);
             text = vec->data();
             fullsize = vec->size();
-            textlen = fullsize / (1 + 3 * sizeof(int) / sizeof(char));
             text_file.close();
         }
+        if (use_lcp)
+            textlen = fullsize / (1 + 3 * sizeof(int) / sizeof(char));
+        else
+            textlen = fullsize / (1 + 1 * sizeof(int) / sizeof(char));
         sa_info = (int *)(text + textlen);
 
         vector<int> occ;
         if (!use_pattern_path)
         {
-            search(text, textlen, pattern, strlen(pattern), sa_info, sa_info + textlen, sa_info + textlen * 2, &occ);
+            if (use_lcp)
+                search(text, textlen, pattern, strlen(pattern), sa_info, sa_info + textlen, sa_info + textlen * 2, &occ);
+            else
+                search(text, textlen, pattern, strlen(pattern), sa_info, &occ);
             print_occs(&occ, text, textlen, count_mode);
         }
         else
@@ -200,7 +208,11 @@ int main(int argc, char **argv)
             while (!pattern_file.eof())
             {
                 pattern_file.getline(pat, STRING_SIZE_LESS);
-                search(text, textlen, pat, pattern_file.gcount() - 1, sa_info, sa_info + textlen, sa_info + textlen * 2, &occ);
+                if (use_lcp)
+                    search(text, textlen, pat, pattern_file.gcount() - 1, sa_info, sa_info + textlen, sa_info + textlen * 2, &occ);
+                else
+                    search(text, textlen, pat, pattern_file.gcount() - 1, sa_info, &occ);
+
                 printf(">> occurences for %s:\n", pat);
                 print_occs(&occ, text, textlen, count_mode);
                 printf("\n");
@@ -219,20 +231,36 @@ int main(int argc, char **argv)
         }
 
         textlen = (int)(text_file.tellg());
-        fullsize = textlen + (textlen * 3) * sizeof(int) / sizeof(char);
         text_file.seekg(0);
+
+        if (use_lcp)
+            fullsize = textlen + (textlen * 3) * sizeof(int) / sizeof(char);
+        else
+            fullsize = textlen + (textlen) * sizeof(int);
 
         text = new char[fullsize];
         sa_info = (int *)(text + textlen);
         text_file.read(text, textlen);
         text_file.close();
 
-        construct(text, textlen, sa_info, sa_info + textlen, sa_info + textlen * 2);
+        if (use_lcp)
+            construct(text, textlen, sa_info, sa_info + textlen, sa_info + textlen * 2);
+        else
+            construct(text, textlen, sa_info);
 
         char *text_dest = new char[strlen(text_path) + 4];
         strcpy(text_dest, text_path);
         strcat(text_dest, ".idx");
         ofstream text_file_dest(text_dest, ios_base::trunc | ios_base::binary);
+
+        char flags;
+        if (use_lcp)
+            flags |= flag_uses_lcp;
+        if (no_compression)
+            flags |= flag_uncompressed;
+
+        text_file_dest.write(&flags, 1);
+
         if (no_compression)
         {
             text_file_dest.write(text, fullsize);

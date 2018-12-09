@@ -14,14 +14,7 @@ struct elmt
 
 bool compare(elmt a, elmt b)
 {
-    return a.char_order < b.char_order
-        || a.char_order == b.char_order && (a.suffix_order < b.suffix_order
-        || (a.suffix_order == b.suffix_order && a.pos < b.pos));
-}
-
-int access(int *el, int y, int x, int textlen)
-{
-    return el[y * textlen + x];
+    return a.char_order < b.char_order || a.char_order == b.char_order && (a.suffix_order < b.suffix_order || (a.suffix_order == b.suffix_order && a.pos < b.pos));
 }
 
 void sort_index(char *text, int textlen, int *S, elmt *V)
@@ -66,7 +59,6 @@ void build_P(char *text, int textlen, int lenlog2plus1, int *P)
         {
             V[i].pos = i;
         }
-        S += textlen;
         sort_index(text, textlen, S, V);
     }
     delete[] V;
@@ -84,66 +76,16 @@ void sa_invert(int *P, int textlen, int *sa)
     }
 }
 
-int lcp(int *P, int textlen, int lenlog2, int i, int j)
-{
-    if (i == j)
-        return textlen - i;
-    else
-    {
-        int l = 0;
-        for (int q = lenlog2; (q >= 0) & (i < textlen) & (j < textlen); --q)
-        {
-            if (access(P, q, i, textlen) == access(P, q, j, textlen))
-            {
-                l += 1 << q;
-                i += 1 << q;
-                j += 1 << q;
-            }
-        }
-        return l;
-    }
-}
-
-void fill_lrlcp(int *sa, int *P, int textlen, int lenlog2, int left, int right, int *L, int *R)
-{
-    if (right - left <= 1)
-        return;
-
-    int half = (left + right) / 2;
-    L[half] = lcp(P, textlen, lenlog2, sa[left], sa[half]);
-    R[half] = lcp(P, textlen, lenlog2, sa[right], sa[half]);
-    fill_lrlcp(sa, P, textlen, lenlog2, left, half, L, R);
-    fill_lrlcp(sa, P, textlen, lenlog2, half, right, L, R);
-}
-
-void lrlcp(int *sa, int *P, int textlen, int lenlog2plus1, int *L, int *R)
-{
-    for (int i = 0; i < textlen; ++i)
-    {
-        L[i] = 0;
-        R[i] = 0;
-    }
-    fill_lrlcp(sa, P, textlen, lenlog2plus1 - 1, 0, textlen - 1, L, R);
-}
-
-void construct(char* text, int textlen, int* sa, int* L, int* R)
+void construct(char *text, int textlen, int *sa)
 {
     int lenlog2plus1 = ceil(log2(textlen)) + 1;
-    int *P = new int[textlen * lenlog2plus1];
+    int *P = new int[textlen];
     build_P(text, textlen, lenlog2plus1, P);
-    sa_invert(P + textlen * (lenlog2plus1 - 1), textlen, sa);
-    lrlcp(sa, P, textlen, lenlog2plus1, L, R);
+    sa_invert(P, textlen, sa);
     delete[] P;
 }
 
-int lcp_bf(char *str1, int str1len, char *str2, int str2len)
-{
-    int minnie = min(str1len, str2len);
-    pair<char *, char *> pair = mismatch(str1, str1 + minnie, str2);
-    return pair.first - str1;
-}
-
-int succ(char *text, int textlen, char *pat, int patlen, int *sa, int *L, int *R)
+int succ(char *text, int textlen, char *pat, int patlen, int *sa)
 {
     if (strncmp(text + sa[textlen - 1], pat, patlen) < 0)
         return textlen;
@@ -151,67 +93,21 @@ int succ(char *text, int textlen, char *pat, int patlen, int *sa, int *L, int *R
         return 0;
     else
     {
-        int left = lcp_bf(text + sa[0], textlen - sa[0], pat, patlen);
-        int right = lcp_bf(text + sa[textlen - 1], textlen - sa[textlen - 1], pat, patlen);
         int r = textlen - 1;
         int l = 0;
-        while (r - l > 1)
+        while (1 < r - l)
         {
             int h = (l + r) / 2;
-            if (left >= right)
-            {
-                if (L[h] > left)
-                    l = h;
-                else if (L[h] < left)
-                {
-                    r = h;
-                    right = L[h];
-                }
-                else
-                {
-                    int half = left + lcp_bf(text + sa[h] + left, textlen - (sa[h] + left), pat + left, patlen - left);
-                    if ((half < patlen) & (half < textlen - sa[h]) & (text[sa[h] + half] < pat[half]))
-                    {
-                        l = h;
-                        left = half;
-                    }
-                    else
-                    {
-                        r = h;
-                        right = half;
-                    }
-                }
-            }
+            if (strncmp(text + sa[h], pat, patlen) >= 0)
+                r = h;
             else
-            {
-                if (R[h] > right)
-                    r = h;
-                else if (R[h] < right)
-                {
-                    l = h;
-                    left = R[h];
-                }
-                else
-                {
-                    int half = right + lcp_bf(text + sa[h] + right, textlen - (sa[h] + right), pat + right, patlen - right);
-                    if ((half < patlen) & (half < textlen - sa[h]) & (text[sa[h] + half] < pat[half]))
-                    {
-                        l = h;
-                        left = half;
-                    }
-                    else
-                    {
-                        r = h;
-                        right = half;
-                    }
-                }
-            }
+                l = h;
         }
         return r;
     }
 }
 
-int pred(char *text, int textlen, char *pat, int patlen, int *sa, int *L, int *R)
+int pred(char *text, int textlen, char *pat, int patlen, int *sa)
 {
     if (strncmp(text + sa[textlen - 1], pat, patlen) <= 0)
         return textlen - 1;
@@ -219,71 +115,25 @@ int pred(char *text, int textlen, char *pat, int patlen, int *sa, int *L, int *R
         return -1;
     else
     {
-        int left = lcp_bf(text + sa[0], textlen - sa[0], pat, patlen);
-        int right = lcp_bf(text + sa[textlen - 1], textlen - sa[textlen - 1], pat, patlen);
         int r = textlen - 1;
         int l = 0;
-        while (r - l > 1)
+        while (1 < r - l)
         {
             int h = (l + r) / 2;
-            if (left >= right)
-            {
-                if (L[h] > left)
-                    l = h;
-                else if (L[h] < left)
-                {
-                    r = h;
-                    right = L[h];
-                }
-                else
-                {
-                    int half = left + lcp_bf(text + sa[h] + left, textlen - (sa[h] + left), pat + left, patlen - left);
-                    if ((half < patlen) & (half < textlen - sa[h]) & (text[sa[h] + half] > pat[half]))
-                    {
-                        r = h;
-                        right = half;
-                    }
-                    else
-                    {
-                        l = h;
-                        left = half;
-                    }
-                }
-            }
+            if (strncmp(text + sa[h], pat, patlen) <= 0)
+                l = h;
             else
-            {
-                if (R[h] > right)
-                    r = h;
-                else if (R[h] < right)
-                {
-                    l = h;
-                    left = R[h];
-                }
-                else
-                {
-                    int half = right + lcp_bf(text + sa[h] + right, textlen - (sa[h] + right), pat + right, patlen - right);
-                    if ((half < patlen) & (half < textlen - sa[h]) & (text[sa[h] + half] > pat[half]))
-                    {
-                        r = h;
-                        right = half;
-                    }
-                    else
-                    {
-                        l = h;
-                        left = half;
-                    }
-                }
-            }
+                r = h;
         }
         return l;
     }
 }
 
-void search(char *text, int textlen, char *pat, int patlen, int *sa, int *L, int *R, vector<int> *occ)
+void search(char *text, int textlen, char *pat, int patlen, int *sa, vector<int> *occ)
 {
-    int left = succ(text, textlen, pat, patlen, sa, L, R);
-    int right = pred(text, textlen, pat, patlen, sa, L, R);
-    for(int i = left; i <= right; ++i)
+    int left = succ(text, textlen, pat, patlen, sa);
+    int right = pred(text, textlen, pat, patlen, sa);
+    for (int i = left; i <= right; ++i)
     {
         occ->push_back(sa[i]);
     }
