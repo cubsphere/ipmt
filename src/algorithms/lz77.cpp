@@ -172,7 +172,7 @@ int idx(char* s, int l, char f) {
   }
   return -1;
 }
-
+/*
 int main() {
   ifstream ftxt("/home/pedro/around.txt");
   string content((istreambuf_iterator<char>(ftxt)),
@@ -199,3 +199,4 @@ int main() {
   //  funzip.write(&otxt[0], otxt.size());
   return 0;
 }
+*/
