@@ -9,8 +9,9 @@
 using namespace std;
 
 bool help_printed = false;
-const char *helpful_string = "after reading this helpful string, you learn how to use this program properly.\n";
-const int STRING_SIZE_LESS = 4096;
+const char *helpful_string = "ipmt index [options] textfile\noptions:\n-n, --no-compression: if set, do not compress output file\n-h, --help: display this message\n\nipmt search [options] pattern textfile\noptions:\n-p, --pattern patternfile: search for all patterns in patternfile. patterns must be separated by a line break. if this option is used, then the program's arguments are instead read as:\nipmt search [options] textfile\n-n, --no-compression: if set, do not decompress input file (i.e. assume it is not compressed)\n-c, --count: if set, display only the amount of occurences of each pattern in the text\n-h, --help: display this message";
+
+static const int STRING_SIZE_LESS = 4096;
 
 void print_occs(vector<int> *occ, char *txt, int n, bool count_mode);
 
