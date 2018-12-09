@@ -3,15 +3,19 @@
 #include <iostream>
 #include <fstream>
 #include <locale>
-#include <suffix-array.hpp>
 #include <string_view>
+#include <suffix-array.hpp>
+#include <lz77.hpp>
 
 using namespace std;
 
 bool help_printed = false;
-const char *helpful_string = "ipmt index [options] textfile\noptions:\n-n, --no-compression: if set, do not compress output file\n-h, --help: display this message\n\nipmt search [options] pattern textfile\noptions:\n-p, --pattern patternfile: search for all patterns in patternfile. patterns must be separated by a line break. if this option is used, then the program's arguments are instead read as:\nipmt search [options] textfile\n-n, --no-compression: if set, do not decompress input file (i.e. assume it is not compressed)\n-c, --count: if set, display only the amount of occurences of each pattern in the text\n-h, --help: display this message";
-
 static const int STRING_SIZE_LESS = 4096;
+
+static const char *helpful_string = "ipmt index [options] textfile\noptions:\n-n, --no-compression: if set, do not compress output file\n--ll: set ll value for compression algorithm\n--ls: set ls value for compression algorithm\n-h, --help: display this message\n\nipmt search [options] pattern textfile\noptions:\n-p, --pattern patternfile: search for all patterns in patternfile. patterns must be separated by a line break. if this option is used, then the program's arguments are instead read as:\nipmt search [options] textfile\n-n, --no-compression: if set, do not decompress input file (i.e. assume it is not compressed)\n--ll: set ll value for decompression algorithm\n--ls: set ls value for decompression algorithm\n-c, --count: if set, display only the amount of occurences of each pattern in the text\n-h, --help: display this message\n";
+
+static const char alphabet[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnoprqstuvwxyz1234567890 .,;:<>)([]{}~^/?\\!@#$\%\'\"&*_+-=|\r\n\t";
+static const int ablen = sizeof(alphabet);
 
 void print_occs(vector<int> *occ, char *txt, int n, bool count_mode);
 
@@ -36,11 +40,15 @@ int main(int argc, char **argv)
     bool pattern_defined = false;
 
     char *text_path;
+    int ll = 4;
+    int ls = 5;
 
     int c;
     int option_index = 0;
     static struct option long_options[] = {
         {"pattern", required_argument, 0, 'p'},
+        {"ll", required_argument, 0, 'l'},
+        {"ls", required_argument, 0, 's'},
         {"count", no_argument, 0, 'c'},
         {"no-compression", no_argument, 0, 'n'},
         {"help", no_argument, 0, 'h'}};
@@ -60,9 +68,14 @@ int main(int argc, char **argv)
             pattern_defined = true;
             use_pattern_path = true;
             pattern_path = optarg;
+            break;
 
-        case 'c':
-            count_mode = true;
+        case 'l':
+            ll = atoi(optarg);
+            break;
+
+        case 's':
+            ls = atoi(optarg);
             break;
 
         case 'h':
@@ -81,6 +94,12 @@ int main(int argc, char **argv)
 
     mode = argv[optind];
     ++optind;
+    if(optind >= argc)
+    {
+        print_help();
+        return -1;
+    }
+
     if (strcmp(mode, "index") == 0)
     {
         if (count_mode && pattern_defined)
@@ -131,27 +150,36 @@ int main(int argc, char **argv)
     int fullsize;
     if (strcmp(mode, "search") == 0)
     {
-        ifstream text_file(text_path, ios::binary);
+        ifstream text_file(text_path, ios::binary | ios::ate);
         if (!text_file.good())
         {
             cout << "could not open text file " << text_path << "\n";
             return 6;
         }
 
-        if (no_compression | !no_compression)
+        if (no_compression)
         {
-            text_file.read((char *)(&textlen), sizeof(int) / sizeof(char));
-            fullsize = textlen + (textlen * 3) * sizeof(int) / sizeof(char);
-            text_file.seekg(sizeof(int) / sizeof(char));
-
+            fullsize = text_file.tellg();
+            textlen = fullsize / (1 + 3 * sizeof(int) / sizeof(char));
+            text_file.seekg(0);
             text = new char[fullsize];
-            sa_info = (int *)(text + textlen);
             text_file.read(text, fullsize);
             text_file.close();
         }
         else
         {
+            int filelen = text_file.tellg();
+            text_file.seekg(0);
+            vector<char> input;
+            input.resize(filelen);
+            text_file.read(&input[0], filelen);
+            vector<char> *vec = lz77_decode(&input, ll, ls, alphabet, ablen);
+            text = vec->data();
+            fullsize = vec->size();
+            textlen = fullsize / (1 + 3 * sizeof(int) / sizeof(char));
+            text_file.close();
         }
+        sa_info = (int *)(text + textlen);
 
         vector<int> occ;
         if (!use_pattern_path)
@@ -190,20 +218,14 @@ int main(int argc, char **argv)
             return 6;
         }
 
-        if (no_compression | !no_compression)
-        {
-            textlen = (int)(text_file.tellg());
-            fullsize = textlen + (textlen * 3) * sizeof(int) / sizeof(char);
-            text_file.seekg(0);
+        textlen = (int)(text_file.tellg());
+        fullsize = textlen + (textlen * 3) * sizeof(int) / sizeof(char);
+        text_file.seekg(0);
 
-            text = new char[fullsize];
-            sa_info = (int *)(text + textlen);
-            text_file.read(text, textlen);
-            text_file.close();
-        }
-        else
-        {
-        }
+        text = new char[fullsize];
+        sa_info = (int *)(text + textlen);
+        text_file.read(text, textlen);
+        text_file.close();
 
         construct(text, textlen, sa_info, sa_info + textlen, sa_info + textlen * 2);
 
@@ -211,9 +233,18 @@ int main(int argc, char **argv)
         strcpy(text_dest, text_path);
         strcat(text_dest, ".idx");
         ofstream text_file_dest(text_dest, ios_base::trunc | ios_base::binary);
-        text_file_dest.write((char *)(&textlen), sizeof(int) / sizeof(char));
-        text_file_dest.write(text, fullsize);
-        text_file_dest.close();
+        if (no_compression)
+        {
+            text_file_dest.write(text, fullsize);
+            text_file_dest.close();
+        }
+        else
+        {
+            vector<char> input(text, text + fullsize);
+            vector<char> *output = lz77_encode(text, fullsize, ll, ls, alphabet, ablen);
+            text_file_dest.write(output->data(), output->size());
+            text_file_dest.close();
+        }
     }
     delete[] text;
 
