@@ -105,7 +105,7 @@ int int_decode(char* x, int xl, char* ab, int base) {
   return val;
 }
 
-vector<char> lz77_encode(const char* txt, int tl, int ls, int ll, char* ab, int ablen) {
+vector<char>* lz77_encode(const char* txt, int tl, int ls, int ll, char* ab, int ablen) {
   int n = tl+ls;
   char* W = new char[n];
   int i = 0;
@@ -116,28 +116,28 @@ vector<char> lz77_encode(const char* txt, int tl, int ls, int ll, char* ab, int 
     W[i] = txt[i-ls];
   }
   int j = ls, p, l, cs;
-  vector<char> code;
+  vector<char>* code = new vector<char>();;
   char* code_part;
   while (j < n) {
     prefix_match(&p, &l, &W[j-ls], min(n, j+ll) - (j-ls), &W[j], min(n,j+ll)-j, ab, ablen);
     code_part = int_encode(p, ls, ab, ablen, &cs);
     for (int i = 0; i < cs; i++) {
-      code.push_back(code_part[i]);
+      code->push_back(code_part[i]);
     }
     delete [] code_part;
     code_part = int_encode(l, ll, ab, ablen, &cs);
     for (int i = 0; i < cs; i++) {
-      code.push_back(code_part[i]);
+      code->push_back(code_part[i]);
     }
     delete [] code_part;
-    code.push_back(W[j+l]);
+    code->push_back(W[j+l]);
     j += l+1;
   }
   delete[] W;
   return code;
 }
 
-vector<char> lz77_decode(vector<char> code, int ls, int ll, char* ab, int ablen) {
+vector<char>* lz77_decode(vector<char>* code, int ls, int ll, char* ab, int ablen) {
   vector<char> txt;
   for (int i = 0; i < ls; i++) {
     txt.push_back(ab[0]);
@@ -149,13 +149,13 @@ vector<char> lz77_decode(vector<char> code, int ls, int ll, char* ab, int ablen)
   int sb_init = 0;
   int p;
   char c;
-  int codelen = code.size();
+  int codelen = code->size();
   while (j < codelen) {
-    p = int_decode(&code[j], bs, ab, ablen);
+    p = int_decode(&(*code)[j], bs, ab, ablen);
     j += bs;
-    l = int_decode(&code[j], bl, ab, ablen);
+    l = int_decode(&(*code)[j], bl, ab, ablen);
     j += bl;
-    c = code[j];
+    c = (*code)[j];
     j += 1;
     for (int i = 0; i < l; i++) {
       txt.push_back(txt[sb_init+p+i]);
@@ -163,7 +163,8 @@ vector<char> lz77_decode(vector<char> code, int ls, int ll, char* ab, int ablen)
     txt.push_back(c);
     sb_init += (l+1);
   }
-  return vector<char>(txt.begin()+ls, txt.end());
+  vector<char>* ret = new vector<char>(txt.begin()+ls, txt.end());
+  return ret;
 }
 
 int idx(char* s, int l, char f) {
@@ -182,19 +183,21 @@ int main() {
     ascab[i] = (char) i;
   }
   int ls = 512, ll = 128;
-  vector<char> code = lz77_encode(&content[0], content.length(),ls,ll,ascab, 128);
+  vector<char>* code = lz77_encode(&content[0], content.length(),ls,ll,ascab, 128);
   ofstream fzip;
   fzip.open("/home/pedro/Desktop/blabla");
-  fzip.write(&code[0], code.size());
+  fzip.write(&(*code)[0], code->size());
   fzip.close();
   ftxt.close();
   int otxtlen;
-  vector<char> otxt = lz77_decode(code, ls, ll, ascab, 128);
+  vector<char>* otxt = lz77_decode(code, ls, ll, ascab, 128);
   ofstream funzip;
-  for (int i = 0; i < otxt.size(); i++) {
-    cout << otxt[i];
+  for (int i = 0; i < otxt->size(); i++) {
+    cout << (*otxt)[i];
   }
   cout << endl;
+  delete code;
+  delete otxt;
   //  funzip.open("/home/pedro/desktop/blabla.txt");
   //  funzip.write(&otxt[0], otxt.size());
   return 0;
