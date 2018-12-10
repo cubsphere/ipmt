@@ -20,7 +20,7 @@ static const char *helpful_string =
     "options:\n"
     "-n, --no-compression: if set, do not compress output file\n"
     "-l, --lcp: use LCP - drastically increases RAM usage\n"
-    "-h, --help: display this message\n"
+    "-h, --help: display this message\n\n"
     "ipmt search [options] pattern textfile\n"
     "options:\n"
     "-p, --pattern patternfile: search for all patterns in patternfile. patterns must be separated by a line break. if this option is used, then the program's arguments are instead read as:\n"
@@ -31,7 +31,7 @@ static const char *helpful_string =
 static const char alphabet[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnoprqstuvwxyz1234567890 .,;:<>)([]{}~^/?\\!@#$\%\'\"&*_+-=|\r\n\t";
 static const int ablen = sizeof(alphabet);
 
-static const int ll = 32;
+static const int ll = 8;
 static const int ls = 64;
 
 static const char flag_uses_lcp = 1;
@@ -69,7 +69,7 @@ int main(int argc, char **argv)
     static struct option long_options[] = {
         {"pattern", required_argument, 0, 'p'},
         {"lcp", no_argument, 0, 'l'},
-        {"lz78", no_argument, 0, '8'},
+        //{"lz78", no_argument, 0, '8'},
         {"count", no_argument, 0, 'c'},
         {"no-compression", no_argument, 0, 'n'},
         {"help", no_argument, 0, 'h'}};
@@ -340,6 +340,7 @@ void print_occs(vector<int> *occ, char *txt, int n, bool count_mode)
     if (count_mode)
         cout << occ->size() << '\n';
     else
+    {
         sort(occ->begin(), occ->end());
         while (pos < occ->size())
         {
@@ -355,4 +356,5 @@ void print_occs(vector<int> *occ, char *txt, int n, bool count_mode)
             while (pos < occ->size() && (occ->at(pos) <= fore) & occ->at(pos) >= hind)
                 ++pos;
         }
+    }
 }
