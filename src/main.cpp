@@ -349,8 +349,8 @@ void print_occs(vector<int> *occ, char *txt, int n, bool count_mode)
             if (fore == -1)
                 fore = n;
 
-            printf("%.*s\n", fore - hind, txt + hind);
-            while (pos < occ->size() && occ->at(pos) < fore)
+            printf("%d %.*s\n", &hind, fore - hind, txt + hind);
+            while (pos < occ->size() && ((occ->at(pos) < fore) & (occ->at(pos) > hind)))
                 ++pos;
         }
 }
