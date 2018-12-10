@@ -4,7 +4,7 @@ BUILDDIR =build
 BINDIR =bin
 
 CC = g++
-CCFLAGS = -g -Wall -std=c++17
+CCFLAGS = -g -O2 -Wall -std=c++17
 INC = -I$(INCDIR)
 TARGET = $(BINDIR)/ipmt
 

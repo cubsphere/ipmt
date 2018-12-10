@@ -36,7 +36,7 @@ long filesize(string s)
 }
 
 const int fileslen = 3;
-const string files[] = {"test2", "around", "shakespeare"};
+const string files[] = {"test1", "test2", "test3"};
 
 const int wordsizeslen = 9;
 const int wordsizes[] = {1, 2, 4, 8, 16, 32, 64, 128, 255};

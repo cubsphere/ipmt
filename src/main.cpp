@@ -30,8 +30,8 @@ static const char *helpful_string =
 static const char alphabet[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnoprqstuvwxyz1234567890 .,;:<>)([]{}~^/?\\!@#$\%\'\"&*_+-=|\r\n\t";
 static const int ablen = sizeof(alphabet);
 
-static const int ll = 4;
-static const int ls = 6;
+static const int ll = 32;
+static const int ls = 64;
 
 static const char flag_uses_lcp = 1;
 static const char flag_uncompressed = 2;
@@ -335,7 +335,7 @@ int main(int argc, char **argv)
 void print_occs(vector<int> *occ, char *txt, int n, bool count_mode)
 {
     int pos = 0;
-    string s(txt);
+    string_view s(txt);
     if (count_mode)
         cout << occ->size() << '\n';
     else
@@ -349,8 +349,8 @@ void print_occs(vector<int> *occ, char *txt, int n, bool count_mode)
             if (fore == -1)
                 fore = n;
 
-            printf("%d %.*s\n", &hind, fore - hind, txt + hind);
-            while (pos < occ->size() && ((occ->at(pos) < fore) & (occ->at(pos) > hind)))
+            printf("%.*s\n", fore - hind, txt + hind);
+            while (pos < occ->size() && !((occ->at(pos) < fore) & (occ->at(pos) > hind)))
                 ++pos;
         }
 }
