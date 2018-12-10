@@ -1,6 +1,7 @@
 #include <getopt.h>
 #include <string.h>
 #include <iostream>
+#include <algorithm>
 #include <fstream>
 #include <locale>
 #include <string>
@@ -334,12 +335,13 @@ int main(int argc, char **argv)
 
 void print_occs(vector<int> *occ, char *txt, int n, bool count_mode)
 {
-    int pos = occ->size() - 1;
+    int pos = 0;
     string_view s(txt);
     if (count_mode)
         cout << occ->size() << '\n';
     else
-        while (pos >= 0)
+        sort(occ->begin(), occ->end());
+        while (pos < occ->size())
         {
             int hind = s.find_last_of('\n', occ->at(pos)) + 1;
             int fore = s.find('\n', occ->at(pos));
@@ -350,7 +352,7 @@ void print_occs(vector<int> *occ, char *txt, int n, bool count_mode)
                 fore = n;
 
             printf("%.*s\n", fore - hind, txt + hind);
-            while (pos < occ->size() && occ->at(pos) < fore)
-                --pos;
+            while (pos < occ->size() && (occ->at(pos) <= fore) & occ->at(pos) >= hind)
+                ++pos;
         }
 }
