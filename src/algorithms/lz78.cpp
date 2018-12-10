@@ -78,57 +78,27 @@ deque<char>* int_encode(int x, const char* ab, const int base) {
     code->push_front(ab[bit]);
     x /= base;
   }
-  cout << "int_encode: ";
-  for (int i = 0; i < code->size(); i++) {
-    cout << (*code)[i];
-  }
-  cout << endl;
   return code;
 }
 
 deque<char>* gprime(deque<char>* y,  const char* ab, const int ablen) {
-  cout << "gprime encoding ";
-  for (int i = 0; i < y->size(); i++) {
-    cout << (*y)[i];
-  }
-  cout << endl;
   if (y->size() <= 1) {
     deque<char>* ret = new deque<char>();
     ret->insert(ret->begin(), y->begin(), y->end());
     delete y;
-    cout << "y: ";
-    for (int i = 0; i < ret->size(); i++) {
-      cout << (*ret)[i];
-    }
-    cout << endl;
     return ret;
   } else {
     deque<char>* ret = gprime(int_encode(y->size()-2, ab, ablen), ab, ablen);
     ret->insert(ret->end(), y->begin(), y->end());
-    cout << "ret: ";
-    for (int i = 0; i < ret->size(); i++) {
-      cout << (*ret)[i];
-    }
-    cout << endl;
     return ret;
   }
 }
 
 deque<char>* cw_encode(deque<char>* w, const char* ab, const int ablen) {
-  cout << "g encoding ";
-  for (int i = 0; i < w->size(); i++) {
-    cout << (*w)[i];
-  }
-  cout << endl;
   w->push_front(ab[1]);
   deque<char>* temp = gprime(w, ab, ablen);
   delete w;
   temp->push_back(ab[0]);
-  cout << "cw_encode: ";
-  for (int i = 0; i < temp->size(); i++) {
-    cout << (*temp)[i];
-  }
-  cout << endl;
   return temp;
 }
 
@@ -138,26 +108,13 @@ deque<char>* encode(string const& txt, const char* ab, const int ablen) {
   int i = 0;
   Dict D = Dict();
   while (i < n) {
-    cout << txt.substr(0, i) << "|" << txt.substr(i, n-i) << endl;
-    cout << "D:\n" << string(D) << "\n\n";
     pair<int,int> jl = D.index(txt.substr(i,n-i));
     int j = get<0>(jl);
     int l = get<1>(jl);
-    cout << "found " << D.fond(j) << endl;
     deque<char>* cj = int_encode(j, ab, ablen);
     cj = cw_encode(cj, ab, ablen);
-    cout << "g(" << j << ")=";
-    for (int i = 0; i < cj->size(); i++) {
-      cout << (*cj)[i];
-    }
-    cout << endl;
     code->insert(code->end(), cj->begin(), cj->end());
     code->push_back(txt[i+l]);
-    cout << "code= ";
-    for (int i = 0; i < code->size(); i++) {
-      cout << (*code)[i];
-    }
-    cout << endl;
     D.add(txt.substr(i, l+1));
     i += l+1;
     delete cj;
@@ -178,14 +135,12 @@ deque<char>* decode(deque<char>* code, const char* ab, const int ablen) {
     while (1) {
       if ((*code)[i] == ab[0]) {
 	string dic_entry = D.fond(int_decode(&w[1], w.size()-1, ab, ablen));
-	cout << "dic_entry: " << dic_entry << endl;
 	txt->insert(txt->end(), dic_entry.begin(), dic_entry.end());
 	i+=1;
 	char c = (*code)[i];
 	txt->push_back(c);
 	i+=1;
 	D.add(dic_entry + c);
-	cout << string(D) << endl;
 	break;
       }
       w = "";
@@ -198,7 +153,7 @@ deque<char>* decode(deque<char>* code, const char* ab, const int ablen) {
   }
   return txt;
 }
-
+/*
 int main() {
   string txt = "aabcbcbcbacbabcbabccbabb";
   const char* ab = "abc";
@@ -211,7 +166,8 @@ int main() {
   for (int i = 0; i < decoded->size(); i++) {
     cout << (*decoded)[i];
   }
+  cout << endl;
   delete decoded;
   delete code;
-  cout << endl;
 }
+*/
