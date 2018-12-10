@@ -7,6 +7,7 @@
 #include <suffix-array.hpp>
 #include <suffix-array-lcp.hpp>
 #include <lz77.hpp>
+#include <lz78.hpp>
 
 using namespace std;
 
@@ -14,18 +15,17 @@ bool help_printed = false;
 static const int STRING_SIZE_LESS = 4096;
 
 static const char *helpful_string =
-"ipmt index [options] textfile\n"
-"options:\n"
-"-n, --no-compression: if set, do not compress output file\n"
-"-l, --lcp: use LCP - drastically increases RAM usage\n"
-"-h, --help: display this message\n"
-"ipmt search [options] pattern textfile\n"
-"options:\n"
-"-p, --pattern patternfile: search for all patterns in patternfile. patterns must be separated by a line break. if this option is used, then the program's arguments are instead read as:\n"
-"ipmt search [options] textfile\n"
-"-c, --count: if set, display only the amount of occurences of each pattern in the text\n"
-"-h, --help: display this message\n"
-;
+    "ipmt index [options] textfile\n"
+    "options:\n"
+    "-n, --no-compression: if set, do not compress output file\n"
+    "-l, --lcp: use LCP - drastically increases RAM usage\n"
+    "-h, --help: display this message\n"
+    "ipmt search [options] pattern textfile\n"
+    "options:\n"
+    "-p, --pattern patternfile: search for all patterns in patternfile. patterns must be separated by a line break. if this option is used, then the program's arguments are instead read as:\n"
+    "ipmt search [options] textfile\n"
+    "-c, --count: if set, display only the amount of occurences of each pattern in the text\n"
+    "-h, --help: display this message\n";
 
 static const char alphabet[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnoprqstuvwxyz1234567890 .,;:<>)([]{}~^/?\\!@#$\%\'\"&*_+-=|\r\n\t";
 static const int ablen = sizeof(alphabet);
@@ -35,6 +35,7 @@ static const int ls = 6;
 
 static const char flag_uses_lcp = 1;
 static const char flag_uncompressed = 2;
+static const char flag_uses_lz78 = 4;
 
 void print_occs(vector<int> *occ, char *txt, int n, bool count_mode);
 
@@ -51,6 +52,7 @@ int main(int argc, char **argv)
 {
     bool count_mode = false;
     bool use_lcp = false;
+    bool use_lz78 = false;
     bool no_compression = false;
 
     char *mode;
@@ -66,6 +68,7 @@ int main(int argc, char **argv)
     static struct option long_options[] = {
         {"pattern", required_argument, 0, 'p'},
         {"lcp", no_argument, 0, 'l'},
+        {"lz78", no_argument, 0, '8'},
         {"count", no_argument, 0, 'c'},
         {"no-compression", no_argument, 0, 'n'},
         {"help", no_argument, 0, 'h'}};
@@ -89,6 +92,10 @@ int main(int argc, char **argv)
 
         case 'l':
             use_lcp = true;
+            break;
+
+        case '8':
+            use_lz78 = true;
             break;
 
         case 'c':
@@ -174,6 +181,7 @@ int main(int argc, char **argv)
         text_file.read(&flags, 1);
         no_compression = flags & flag_uncompressed;
         use_lcp = flags & flag_uses_lcp;
+        use_lz78 = flags & flag_uses_lz78;
 
         if (no_compression)
         {
@@ -184,13 +192,25 @@ int main(int argc, char **argv)
         }
         else
         {
-            vector<char> input;
-            input.resize(filelen - 1);
-            text_file.read(&input[0], filelen - 1);
-            vector<char> *vec = lz77_decode(&input, ll, ls, alphabet, ablen);
-            text = vec->data();
-            fullsize = vec->size();
-            text_file.close();
+            if (use_lz78)
+            {
+                deque<char> input(filelen - 1, '\0');
+                text_file.read(&input[0], filelen - 1);
+                deque<char> *dek = decode(&input, alphabet, ablen);
+                text = &(*dek)[0];
+                fullsize = dek->size();
+                text_file.close();
+            }
+            else
+            {
+                vector<char> input;
+                input.resize(filelen - 1);
+                text_file.read(&input[0], filelen - 1);
+                vector<char> *vec = lz77_decode(&input, ll, ls, alphabet, ablen);
+                text = vec->data();
+                fullsize = vec->size();
+                text_file.close();
+            }
         }
         if (use_lcp)
             textlen = fullsize / (1 + 3 * sizeof(int) / sizeof(char));
@@ -270,6 +290,8 @@ int main(int argc, char **argv)
             flags |= flag_uses_lcp;
         if (no_compression)
             flags |= flag_uncompressed;
+        if (use_lz78)
+            flags |= flag_uses_lz78;
 
         text_file_dest.write(&flags, 1);
 
@@ -280,10 +302,21 @@ int main(int argc, char **argv)
         }
         else
         {
-            vector<char> input(text, text + fullsize);
-            vector<char> *output = lz77_encode(text, fullsize, ll, ls, alphabet, ablen);
-            text_file_dest.write(output->data(), output->size());
-            text_file_dest.close();
+            if (use_lz78)
+            {
+                string_view input(text, fullsize);
+                deque<char> *output = encode(input, alphabet, ablen);
+                text_file_dest.write(&(*output)[0], output->size());
+                text_file_dest.close();
+            }
+            else
+            {
+
+                vector<char> input(text, text + fullsize);
+                vector<char> *output = lz77_encode(text, fullsize, ll, ls, alphabet, ablen);
+                text_file_dest.write(output->data(), output->size());
+                text_file_dest.close();
+            }
         }
     }
     delete[] text;

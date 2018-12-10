@@ -96,10 +96,10 @@ char* int_encode(int x, int size, const char* ab, int base, int* cs) {
 }
 
 // base = len(ab), xl = len(x)
-int int_decode(const char* x, int xl, const char* ab, int base) {
+int int_decode_77(const char* x, int xl, const char* ab, int base) {
   int power = 1, val = 0;
   for (int c = xl-1; c >=0; c--) {
-    val = val + idx(ab, base, x[c]) * power;
+    val = val + idx_77(ab, base, x[c]) * power;
     power *= base;
   }
   return val;
@@ -151,9 +151,9 @@ vector<char>* lz77_decode(vector<char>* code, int ls, int ll, const char* ab, in
   char c;
   int codelen = code->size();
   while (j < codelen) {
-    p = int_decode(&(*code)[j], bs, ab, ablen);
+    p = int_decode_77(&(*code)[j], bs, ab, ablen);
     j += bs;
-    l = int_decode(&(*code)[j], bl, ab, ablen);
+    l = int_decode_77(&(*code)[j], bl, ab, ablen);
     j += bl;
     c = (*code)[j];
     j += 1;
@@ -167,7 +167,7 @@ vector<char>* lz77_decode(vector<char>* code, int ls, int ll, const char* ab, in
   return ret;
 }
 
-int idx(const char* s, int l, char f) {
+int idx_77(const char* s, int l, char f) {
   for (int i = 0; i < l; i++) {
     if (s[i] == f) return i;
   }
