@@ -280,8 +280,14 @@ int main(int argc, char **argv)
         else
             construct(text, textlen, sa_info);
 
-        char *text_dest = new char[strlen(text_path) + 4];
-        strcpy(text_dest, text_path);
+        char *text_dest = new char[strlen(text_path) + 5];
+	int first_dot = idx_77(text_path, strlen(text_path), '.');
+	if (first_dot == -1) first_dot = strlen(text_path);
+	int fd;
+	for (fd = 0; fd < first_dot; fd++) {
+	  text_dest[fd] = text_path[fd];
+	}
+	text_dest[fd] = '\0';
         strcat(text_dest, ".idx");
         ofstream text_file_dest(text_dest, ios_base::trunc | ios_base::binary);
 
