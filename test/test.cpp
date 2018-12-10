@@ -78,19 +78,6 @@ int main()
 
     for (int k = 0; k < fileslen; ++k)
     {
-        index_times_8[k] += time_ms("./ipmt index --lz78 " + files[k]);
-        sizes_8[k] = filesize(files[k] + ".idx");
-        for (int nnb = 0; nnb < repeat; ++nnb)
-        {
-            for (int i = 0; i < wordsizeslen; ++i)
-            {
-                search_times_8[k][i] += time_ms("./ipmt search -c " + randword(wordsizes[i]) + " " + files[k] + ".idx");
-            }
-        }
-    }
-
-    for (int k = 0; k < fileslen; ++k)
-    {
         index_times_n[k] += time_ms("./ipmt index -n " + files[k]);
         sizes_n[k] = filesize(files[k] + ".idx");
         for (int nnb = 0; nnb < repeat; ++nnb)
@@ -130,15 +117,6 @@ int main()
             cout << "    " << wordsizes[i] << "-length word searched for in: " << search_times_7[k][i] << " ms\n";
         }
         cout << "  >>end of lz-77\n";
-
-        cout << "  >>lz-78: " << sizes_8[k] << " bytes\n";
-        cout << "    indexed in: " << index_times_8[k] << " ms\n";
-        for (int i = 0; i < wordsizeslen; ++i)
-        {
-            search_times_8[k][i] /= repeat;
-            cout << "    " << wordsizes[i] << "-length word searched for in: " << search_times_8[k][i] << " ms\n";
-        }
-        cout << "  >>end of lz-78\n";
 
         cout << "  >>no compression: " << sizes_n[k] << " bytes\n";
         cout << "    indexed in: " << index_times_n[k] << " ms\n";
