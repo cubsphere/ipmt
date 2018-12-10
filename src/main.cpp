@@ -314,7 +314,7 @@ int main(int argc, char **argv)
 
                 vector<char> input(text, text + fullsize);
                 vector<char> *output = lz77_encode(text, fullsize, ll, ls, alphabet, ablen);
-                text_file_dest.write(output->data(), output->size());
+                text_file_dest.write(&(*output)[0], output->size());
                 text_file_dest.close();
             }
         }
