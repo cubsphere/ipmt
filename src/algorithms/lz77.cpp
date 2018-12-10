@@ -3,7 +3,7 @@
 #include <cmath>
 #include <vector>
 #include <algorithm>
-#include <lz77.hpp>
+#include "lz77.hpp"
 
 #include <iostream>
 #include <fstream>
