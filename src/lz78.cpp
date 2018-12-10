@@ -4,7 +4,6 @@
 #include <vector>
 #include <deque>
 #include <string>
-#include <string_view>
 #include <utility>
 #include <cmath>
 
@@ -125,7 +124,7 @@ deque<char> *cw_encode(deque<char> *w, const char *ab, const int ablen)
   return temp;
 }
 
-deque<char> *encode(string_view const &txt, const char *ab, const int ablen)
+deque<char> *encode(string const &txt, const char *ab, const int ablen)
 {
   deque<char> *code = new deque<char>();
   int n = txt.size();

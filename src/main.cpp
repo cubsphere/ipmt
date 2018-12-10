@@ -3,7 +3,7 @@
 #include <iostream>
 #include <fstream>
 #include <locale>
-#include <string-view>
+#include <string>
 #include <suffix-array.hpp>
 #include <suffix-array-lcp.hpp>
 #include <lz77.hpp>
@@ -304,7 +304,7 @@ int main(int argc, char **argv)
         {
             if (use_lz78)
             {
-                string_view input(text, fullsize);
+                string input(text, fullsize);
                 deque<char> *output = encode(input, alphabet, ablen);
                 text_file_dest.write(&(*output)[0], output->size());
                 text_file_dest.close();
@@ -327,7 +327,7 @@ int main(int argc, char **argv)
 void print_occs(vector<int> *occ, char *txt, int n, bool count_mode)
 {
     int pos = 0;
-    string_view s(txt);
+    string s(txt);
     if (count_mode)
         cout << occ->size() << '\n';
     else
